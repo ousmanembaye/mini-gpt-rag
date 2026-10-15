@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Ambienti virtuali
+.venv/
+venv/
+env/
+
+# File contenenti credenziali
+.env
+.env.*
+!.env.example
+
+# Indice RAG rigenerabile
+rag_index.pt
+
+# Documenti PDF: potrebbero contenere informazioni private
+documenti/*.pdf
+
+# File temporanei di Windows
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,5 @@
+Ogni dipendente ha diritto a 25 giorni di ferie all'anno.
+        La richiesta deve essere inviata tramite il portale HR
+        almeno 10 giorni prima dell'inizio.
+        Il responsabile approva o rifiuta la richiesta.
+        In caso di emergenza, contattare il team HR.

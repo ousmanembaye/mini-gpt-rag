@@ -1,0 +1,6 @@
+Per ottenere il rimborso di una spesa di lavoro,
+        il dipendente deve inviare la richiesta tramite il portale
+        aziendale entro 30 giorni.
+        È necessario allegare una ricevuta leggibile e indicare
+        il progetto. Le spese personali e le richieste senza
+        documentazione possono essere rifiutate.
