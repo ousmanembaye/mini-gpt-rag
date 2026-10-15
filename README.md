@@ -52,7 +52,7 @@ cd mini-gpt-rag
 Install the required packages:
 
 ```bash
-python -m pip install torch transformers sentence-transformers gradio pypdf
+python -m pip install -r requirements.txt
 ```
 
 The first run may download the embedding model, reranker, and language model. Internet access is needed for these downloads if the models are not already cached locally.
