@@ -1,3 +1,5 @@
+# http://127.0.0.1:7860 link per vedere il programma
+
 # Carica un embedding model multilingue
 import os
 import torch
@@ -62,7 +64,6 @@ if not documents:
         f"Nessun documento leggibile trovato in {DOCS_DIR}"
     )
 
-print(f"\nDocumenti caricati: {len(documents)}")
 
 for doc in documents:
     print(f"- {doc['source']}")
@@ -221,95 +222,6 @@ reranker = CrossEncoder(
 )
 gen_model = gen_model.to(device)
 gen_model.eval()
-
-# ==============================
-# TEST AUTOMATICI DEL RETRIEVAL
-# ==============================
-
-test_cases = [
-    (
-        "Ferie",
-        "Quanti giorni di ferie spettano a un dipendente?",
-        "policy_ferie.txt"
-    ),
-    (
-        "Lavoro da remoto",
-        "Quanti giorni a settimana posso lavorare da remoto?",
-        "policy_remoto.txt"
-    ),
-    (
-        "Informazione assente",
-        "Qual è il budget annuale per la formazione dei dipendenti?",
-        None
-    )
-]
-
-test_threshold = 0.5
-test_min_chunk_similarity = 0.5
-test_top_k = 3
-
-passed_tests = 0
-
-print("\n===== TEST AUTOMATICI =====")
-
-for name, test_query, expected_source in test_cases:
-
-    # 1. Generiamo l'embedding della domanda
-    query_embedding = embedding_model.encode(
-        test_query,
-        convert_to_tensor=True,
-        normalize_embeddings=True
-    )
-
-    # 2. Calcoliamo la similarità con tutti i chunk
-    similarities = embeddings @ query_embedding
-
-    # 3. Recuperiamo i migliori candidati
-    scores, indices = torch.topk(
-        similarities,
-        k=min(test_top_k, len(all_chunks))
-    )
-
-
-    best_score = scores[0].item()
-
-    # 4. Applichiamo il filtro ai singoli chunk
-    retrieved_sources = [
-        all_chunks[idx.item()]["source"]
-        for score, idx in zip(scores, indices)
-        if score.item() >= test_min_chunk_similarity
-    ]
-
-    # 5. Verifichiamo il risultato atteso
-    if expected_source is not None:
-        passed = (
-            best_score >= test_threshold
-            and expected_source in retrieved_sources
-        )
-    else:
-        passed = (
-            best_score < test_threshold
-            and len(retrieved_sources) == 0
-        )
-
-    # 6. Stampiamo il risultato
-    status = "PASS" if passed else "FAIL"
-
-    print(f"\n[{status}] {name}")
-    print(f"Domanda: {test_query}")
-    print(f"Similarità migliore: {best_score:.4f}")
-    print(f"Fonti recuperate: {retrieved_sources}")
-
-    if passed:
-        passed_tests += 1
-
-print(
-    f"\nRisultato finale: {passed_tests}/{len(test_cases)} "
-    "test superati."
-)
-
-print("=============================\n")
-
 
 def answer_query(query):
     # Parametri del retrieval
@@ -515,8 +427,97 @@ quando il contesto lo afferma esplicitamente.
 
     return answer, sources, best_score
 
+# ==============================
+# TEST AUTOMATICI DEL RETRIEVAL
+# ==============================
 if __name__ == "__main__":
-    
+    # Qui vanno i test automatici
+    # con tutte le righe indentate di 4 spazi
+
+    test_cases = [
+        (
+            "Ferie",
+            "Quanti giorni di ferie spettano a un dipendente?",
+            "policy_ferie.txt"
+        ),
+        (
+            "Lavoro da remoto",
+            "Quanti giorni a settimana posso lavorare da remoto?",
+            "policy_remoto.txt"
+        ),
+        (
+            "Informazione assente",
+            "Qual è il budget annuale per la formazione dei dipendenti?",
+            None
+        )
+    ]
+
+    test_threshold = 0.5
+    test_min_chunk_similarity = 0.5
+    test_top_k = 3
+
+    passed_tests = 0
+
+    print("\n===== TEST AUTOMATICI =====")
+
+    for name, test_query, expected_source in test_cases:
+
+        # 1. Generiamo l'embedding della domanda
+        query_embedding = embedding_model.encode(
+            test_query,
+            convert_to_tensor=True,
+            normalize_embeddings=True
+        )
+
+        # 2. Calcoliamo la similarità con tutti i chunk
+        similarities = embeddings @ query_embedding
+
+        # 3. Recuperiamo i migliori candidati
+        scores, indices = torch.topk(
+            similarities,
+            k=min(test_top_k, len(all_chunks))
+        )
+
+
+        best_score = scores[0].item()
+
+        # 4. Applichiamo il filtro ai singoli chunk
+        retrieved_sources = [
+            all_chunks[idx.item()]["source"]
+            for score, idx in zip(scores, indices)
+            if score.item() >= test_min_chunk_similarity
+        ]
+
+        # 5. Verifichiamo il risultato atteso
+        if expected_source is not None:
+            passed = (
+                best_score >= test_threshold
+                and expected_source in retrieved_sources
+            )
+        else:
+            passed = (
+                best_score < test_threshold
+                and len(retrieved_sources) == 0
+            )
+
+        # 6. Stampiamo il risultato
+        status = "PASS" if passed else "FAIL"
+
+        print(f"\n[{status}] {name}")
+        print(f"Domanda: {test_query}")
+        print(f"Similarità migliore: {best_score:.4f}")
+        print(f"Fonti recuperate: {retrieved_sources}")
+
+        if passed:
+            passed_tests += 1
+
+    print(
+        f"\nRisultato finale: {passed_tests}/{len(test_cases)} "
+        "test superati."
+    )
+
+    print("=============================\n")
+
     generation_tests = [
         {
             "name": "Numero di giorni di ferie",
