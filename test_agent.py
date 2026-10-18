@@ -1,4 +1,9 @@
-from agent import choose_tool, list_policies, search_policies
+from agent import (
+    choose_tool,
+    list_policies,
+    search_policies,
+    run_agent
+)
 
 
 def run_test(name, test_function):
@@ -122,6 +127,29 @@ def test_missing_information_result():
         and len(result["sources"]) == 0
     )
 
+# ==================================================
+# TEST 9: INPUT VUOTO DELL'AGENTE
+# ==================================================
+
+def test_empty_agent_input():
+    result = run_agent("   ")
+
+    return result == "Inserisci una domanda per continuare."
+
+
+# ==================================================
+# TEST 10: INPUT NON VALIDO PER IL RAG
+# ==================================================
+
+def test_empty_search_input():
+    result = search_policies(" ")
+
+    return (
+        result["ok"] is False
+        and result["sources"] == []
+        and result["similarity"] is None
+        and "domanda valida" in result["answer"].lower()
+    )
 
 # ==================================================
 # ESECUZIONE DI TUTTI I TEST
@@ -136,6 +164,8 @@ tests = [
     ("Risposta sulle ferie e fonte corretta", test_vacation_result),
     ("Rispetto dell'approvazione obbligatoria", test_approval_result),
     ("Gestione delle informazioni mancanti", test_missing_information_result),
+    ("Gestione dell'input vuoto nell'agente", test_empty_agent_input),
+    ("Gestione dell'input non valido nel RAG", test_empty_search_input),
 ]
 
 passed = 0
