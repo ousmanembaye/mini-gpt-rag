@@ -71,6 +71,38 @@ http://127.0.0.1:7860
 
 You can then submit questions about the documents stored in the `documenti/` directory.
 
+## AI Agent
+
+The project also includes an experimental AI agent implemented in `agent.py`.
+
+The agent uses a language model to select between two tools:
+
+* `list_policies`: lists the available documents.
+* `search_policies`: searches company policies using the RAG pipeline.
+
+The agent delegates document retrieval and answer generation to the existing RAG system.
+
+### Run the Agent
+
+Start the agent with:
+
+```bash
+python agent.py
+```
+
+You can then ask questions interactively.
+
+Example requests:
+
+* "Which documents are available?"
+* "How many vacation days does an employee receive?"
+* "Can an employee work remotely without manager approval?"
+
+Type `esci` to terminate the agent.
+
+**Note:** Tool selection is experimental. The model may occasionally select the wrong tool. The current implementation uses a simple fallback when the model returns an unexpected output.
+
+
 ## Example Questions
 
 * How many vacation days does an employee receive?
