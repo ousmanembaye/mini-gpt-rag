@@ -20,10 +20,37 @@ def list_policies() -> list[str]:
 
 # TOOL 2: cerca una risposta tramite il RAG
 def search_policies(question: str) -> dict:
+    """Cerca una risposta nel RAG e gestisce gli errori."""
 
-    answer, sources, best_score = answer_query(question)
+    # 1. Verifichiamo la domanda
+    if not isinstance(question, str) or not question.strip():
+        return {
+            "ok": False,
+            "answer": "Inserisci una domanda valida.",
+            "sources": [],
+            "similarity": None
+        }
 
+    # 2. Eseguiamo il RAG e gestiamo eventuali errori
+    try:
+        answer, sources, best_score = answer_query(question.strip())
+
+    except Exception as error:
+        print(f"\n[TOOL ERROR] search_policies: {error}")
+
+        return {
+            "ok": False,
+            "answer": (
+                "Si è verificato un errore durante la ricerca "
+                "nei documenti."
+            ),
+            "sources": [],
+            "similarity": None
+        }
+
+    # 3. Restituiamo il risultato
     return {
+        "ok": True,
         "answer": answer,
         "sources": sources,
         "similarity": round(float(best_score), 4)
@@ -149,31 +176,65 @@ Non aggiungere spiegazioni.
 
 # Esegue lo strumento selezionato e restituisce il risultato
 def run_agent(user_message: str) -> str:
+    """Gestisce la richiesta dell'utente ed esegue lo strumento."""
 
+    # 1. Controlliamo l'input prima di chiamare il modello
+    if not isinstance(user_message, str) or not user_message.strip():
+        return "Inserisci una domanda per continuare."
+
+    user_message = user_message.strip()
+
+    # 2. Il modello seleziona lo strumento
     selected_tool = choose_tool(user_message)
 
+    # 3. Eseguiamo lo strumento selezionato
     if selected_tool == "list_policies":
 
-        policies = list_policies()
+        try:
+            policies = list_policies()
+
+        except Exception as error:
+            print(f"\n[TOOL ERROR] list_policies: {error}")
+            return "Non è stato possibile recuperare l'elenco dei documenti."
+
+        if not policies:
+            return "Non sono disponibili documenti."
 
         return (
             "Documenti disponibili:\n"
             + "\n".join(f"- {policy}" for policy in policies)
         )
 
-    result = search_policies(user_message)
+    elif selected_tool == "search_policies":
 
-    sources = (
-        ", ".join(result["sources"])
-        if result["sources"]
-        else "Nessuna fonte recuperata"
-    )
+        result = search_policies(user_message)
 
-    return (
-        f"Risposta: {result['answer']}\n"
-        f"Fonti: {sources}\n"
-        f"Similarità: {result['similarity']}"
-    )
+        # Gestiamo il fallimento dello strumento
+        if not result["ok"]:
+            return result["answer"]
+
+        sources = (
+            ", ".join(result["sources"])
+            if result["sources"]
+            else "Nessuna fonte recuperata"
+        )
+
+        similarity = result["similarity"]
+
+        similarity_text = (
+            f"{similarity:.4f}"
+            if similarity is not None
+            else "N/A"
+        )
+
+        return (
+            f"Risposta: {result['answer']}\n"
+            f"Fonti: {sources}\n"
+            f"Similarità: {similarity_text}"
+        )
+
+    # 4. Gestiamo eventuali strumenti non riconosciuti
+    return "Non sono riuscito a selezionare uno strumento valido."
 
 
 # Avvio dell'agente
