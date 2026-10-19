@@ -1,16 +1,11 @@
 import torch
 
-from rag import (
-    answer_query,
-    documents,
-    gen_model,
-    gen_tokenizer,
-    device
-)
-
 
 # TOOL 1: restituisce i nomi dei documenti disponibili
 def list_policies() -> list[str]:
+    """Restituisce i nomi dei documenti disponibili."""
+
+    from rag import documents
 
     return sorted({
         doc["source"]
@@ -33,6 +28,7 @@ def search_policies(question: str) -> dict:
 
     # 2. Eseguiamo il RAG e gestiamo eventuali errori
     try:
+        from rag import answer_query
         answer, sources, best_score = answer_query(question.strip())
 
     except Exception as error:
@@ -59,6 +55,7 @@ def search_policies(question: str) -> dict:
 
 # L'LLM sceglie quale strumento utilizzare
 def choose_tool(user_message: str) -> str:
+    from rag import gen_model, gen_tokenizer, device
 
     messages = [
         {
