@@ -1,4 +1,5 @@
 import torch
+from agent_routing import select_tool_from_output
 
 
 # TOOL 1: restituisce i nomi dei documenti disponibili
@@ -127,44 +128,11 @@ Non aggiungere spiegazioni.
 
     print(f"\n[AGENT] Output del modello: {decision}")
 
-    # Accettiamo la risposta del modello se contiene
-    # un'etichetta valida all'inizio della risposta.
-    first_line = decision.splitlines()[0].strip()
-
-    if first_line.startswith("list_policies"):
-        selected_tool = "list_policies"
-
-    elif first_line.startswith("search_policies"):
-        selected_tool = "search_policies"
-
-    else:
-        # Fallback: se il modello non rispetta il formato,
-        # riconosciamo le richieste esplicite di elenco.
-        normalized_question = user_message.casefold()
-
-        list_phrases = [
-            "quali documenti",
-            "elenco dei documenti",
-            "elenco documenti",
-            "documenti disponibili",
-            "lista dei documenti",
-            "lista documenti",
-            "mostra i documenti",
-            "quali policy",
-            "quali policies",
-            "documenti hai a disposizione",
-        ]
-
-        if any(
-            phrase in normalized_question
-            for phrase in list_phrases
-        ):
-            selected_tool = "list_policies"
-            print("[AGENT] Utilizzo il fallback per l'elenco.")
-
-        else:
-            selected_tool = "search_policies"
-            print("[AGENT] Utilizzo il fallback per la ricerca.")
+    # Interpretiamo la risposta del modello usando il router
+    selected_tool = select_tool_from_output(
+        decision,
+        user_message
+    )
 
     print(f"[AGENT] Strumento selezionato: {selected_tool}")
 
