@@ -129,6 +129,57 @@ class AgentInputTests(unittest.TestCase):
             result = run_agent(question)
 
         self.assertEqual(result, fake_error["answer"])
+    def test_detail_request_overrides_search_decision(self):
+        result = select_tool_from_output(
+            "search_policies",
+            "Mostrami il contenuto completo della policy sui rimborsi."
+        )
+
+        self.assertEqual(result, "get_policy_details")
+
+    def test_normal_question_overrides_detail_decision(self):
+        result = select_tool_from_output(
+            "get_policy_details",
+            "Quanti giorni di ferie spettano a un dipendente?"
+        )
+
+        self.assertEqual(result, "search_policies")
+    def test_list_request_overrides_detail_decision(self):
+        result = select_tool_from_output(
+            "get_policy_details",
+            "Quali documenti hai a disposizione?"
+        )
+
+        self.assertEqual(result, "list_policies")
+    def test_run_agent_executes_policy_details_tool(self):
+        question = (
+            "Mostrami il contenuto completo "
+            "della policy sui rimborsi."
+        )
+
+        fake_result = {
+            "ok": True,
+            "policy": "policy_rimborsi.txt",
+            "content": "Testo di esempio della policy sui rimborsi."
+        }
+
+        with patch(
+            "agent.choose_tool",
+            return_value="get_policy_details"
+        ), patch(
+            "agent.get_policy_details",
+            return_value=fake_result
+        ) as mock_details, patch(
+            "agent.search_policies"
+        ) as mock_search:
+
+            result = run_agent(question)
+
+        self.assertIn("policy_rimborsi.txt", result)
+        self.assertIn("Testo di esempio", result)
+
+        mock_details.assert_called_once_with(question)
+        mock_search.assert_not_called()
 
 
 if __name__ == "__main__":

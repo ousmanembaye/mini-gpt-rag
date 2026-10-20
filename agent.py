@@ -21,6 +21,134 @@ def list_policies() -> list[str]:
         and path.suffix.lower() in supported_extensions
     )
 
+def get_policy_details(policy_query: str) -> dict:
+    """Restituisce il contenuto di una policy specifica senza caricare i modelli AI."""
+
+    if not isinstance(policy_query, str) or not policy_query.strip():
+        return {
+            "ok": False,
+            "policy": None,
+            "content": "Indica quale policy vuoi consultare."
+        }
+
+    docs_dir = Path(__file__).resolve().parent / "documenti"
+
+    if not docs_dir.is_dir():
+        return {
+            "ok": False,
+            "policy": None,
+            "content": "La cartella dei documenti non è disponibile."
+        }
+
+    # Individuiamo i documenti supportati
+    paths = sorted(
+        path
+        for path in docs_dir.iterdir()
+        if path.is_file() and path.suffix.lower() in {".txt", ".pdf"}
+    )
+
+    # Sinonimi utili per identificare le policy di esempio
+    aliases = {
+        "ferie": ("ferie", "vacanza", "vacanze"),
+        "remoto": (
+            "remoto",
+            "smart working",
+            "telelavoro",
+            "lavoro da casa"
+        ),
+        "rimborsi": (
+            "rimborsi",
+            "rimborso",
+            "spese",
+            "spesa",
+            "ricevuta"
+        )
+    }
+
+    query = policy_query.casefold()
+
+    matches = []
+
+    for path in paths:
+        # Esempio: "policy_rimborsi" diventa "rimborsi"
+        policy_name = path.stem.casefold()
+
+        if policy_name.startswith("policy_"):
+            policy_name = policy_name[len("policy_"):]
+
+        policy_name = policy_name.replace("_", " ")
+
+        keywords = aliases.get(
+            policy_name,
+            (policy_name,)
+        )
+
+        if any(keyword in query for keyword in keywords):
+            matches.append(path)
+
+    # Evitiamo di scegliere arbitrariamente se la richiesta è ambigua
+    if len(matches) == 0:
+        return {
+            "ok": False,
+            "policy": None,
+            "content": (
+                "Non ho identificato una policy specifica. "
+                "Indica, per esempio, ferie, lavoro da remoto o rimborsi."
+            )
+        }
+
+    if len(matches) > 1:
+        return {
+            "ok": False,
+            "policy": None,
+            "content": (
+                "La richiesta corrisponde a più policy. "
+                "Specifica quale documento vuoi consultare."
+            )
+        }
+
+    path = matches[0]
+
+    try:
+        if path.suffix.lower() == ".txt":
+            content = path.read_text(
+                encoding="utf-8"
+            ).strip()
+
+        else:
+            from pypdf import PdfReader
+
+            reader = PdfReader(str(path))
+
+            content = "\n\n".join(
+                page.extract_text() or ""
+                for page in reader.pages
+            ).strip()
+
+    except Exception as error:
+        print(f"[TOOL ERROR] get_policy_details: {error}")
+
+        return {
+            "ok": False,
+            "policy": path.name,
+            "content": "Non è stato possibile leggere il documento."
+        }
+
+    if not content:
+        return {
+            "ok": False,
+            "policy": path.name,
+            "content": (
+                "Non è stato possibile estrarre testo dal documento."
+            )
+        }
+
+    return {
+        "ok": True,
+        "policy": path.name,
+        "content": content
+    }
+
 
 # TOOL 2: cerca una risposta tramite il RAG
 def search_policies(question: str) -> dict:
@@ -70,34 +198,33 @@ def choose_tool(user_message: str) -> str:
         {
             "role": "system",
             "content": """
-Sei un router che deve scegliere uno strumento.
+Sei un router per un assistente aziendale.
 
-Puoi selezionare soltanto:
+Puoi scegliere uno dei seguenti strumenti:
 
+1. list_policies
+Usalo quando l'utente vuole sapere quali documenti
+o policy sono disponibili.
+
+2. search_policies
+Usalo quando l'utente pone una domanda sul contenuto
+delle policy e vuole ottenere una risposta.
+Esempi: quanti giorni di ferie spettano,
+quanti giorni di lavoro da remoto sono consentiti,
+se una certa attività richiede approvazione.
+
+3. get_policy_details
+Usalo quando l'utente vuole leggere o visualizzare
+il contenuto di una specifica policy.
+Esempi: mostra il contenuto completo della policy
+sui rimborsi; fammi leggere la policy sulle ferie.
+
+Devi scegliere un solo strumento.
+
+Rispondi esclusivamente con una delle seguenti etichette:
 list_policies
 search_policies
-
-Regole:
-
-- Se l'utente chiede quali documenti sono disponibili,
-  scegli list_policies.
-
-- Se l'utente fa una domanda sul contenuto dei documenti,
-  scegli search_policies.
-
-Esempi:
-
-"Quali documenti hai?" -> list_policies
-
-"Elencami le policy disponibili" -> list_policies
-
-"Quanti giorni di ferie spettano?" -> search_policies
-
-"Posso lavorare da remoto senza approvazione?"
--> search_policies
-
-Rispondi esclusivamente con il nome dello strumento.
-Non aggiungere spiegazioni.
+get_policy_details
 """
         },
         {
@@ -120,7 +247,7 @@ Non aggiungere spiegazioni.
     with torch.no_grad():
         output = gen_model.generate(
             **inputs,
-            max_new_tokens=12,
+            max_new_tokens=16,
             do_sample=False,
             pad_token_id=gen_tokenizer.eos_token_id
         )
@@ -167,6 +294,19 @@ def execute_tool(selected_tool: str, user_message: str) -> str:
         return (
             "Documenti disponibili:\n"
             + "\n".join(f"- {policy}" for policy in policies)
+        )
+
+        # Strumento 2: mostra il contenuto completo di una policy
+    elif selected_tool == "get_policy_details":
+
+        result = get_policy_details(user_message)
+
+        if not result["ok"]:
+            return result["content"]
+
+        return (
+            f"Contenuto della policy {result['policy']}:\n\n"
+            f"{result['content']}"
         )
 
     # Strumento 2: ricerca nel RAG

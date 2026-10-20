@@ -3,11 +3,10 @@ def select_tool_from_output(
     user_message: str
 ) -> str:
     """
-    Determina quale strumento utilizzare interpretando
-    l'output del modello e, se necessario, applicando un fallback.
+    Seleziona lo strumento considerando prima
+    l'intenzione esplicita dell'utente.
     """
 
-    # Normalizziamo gli input
     if not isinstance(decision, str):
         decision = ""
 
@@ -17,22 +16,7 @@ def select_tool_from_output(
     decision = decision.strip().lower()
     normalized_question = user_message.casefold()
 
-    # Esaminiamo la prima riga della risposta del modello
-    first_line = (
-        decision.splitlines()[0].strip()
-        if decision
-        else ""
-    )
-
-    # Caso 1: il modello ha restituito uno strumento valido
-    if first_line.startswith("list_policies"):
-        return "list_policies"
-
-    if first_line.startswith("search_policies"):
-        return "search_policies"
-
-    # Caso 2: l'output del modello non è valido.
-    # Applichiamo il fallback per le richieste di elenco.
+    # 1. Riconosciamo le richieste di elenco
     list_phrases = [
         "quali documenti",
         "elenco dei documenti",
@@ -43,7 +27,7 @@ def select_tool_from_output(
         "mostra i documenti",
         "quali policy",
         "quali policies",
-        "documenti hai a disposizione"
+        "documenti hai a disposizione",
     ]
 
     if any(
@@ -52,5 +36,42 @@ def select_tool_from_output(
     ):
         return "list_policies"
 
-    # In assenza di un'indicazione chiara, usiamo la ricerca
+    # 2. Riconosciamo le richieste di lettura completa
+    detail_phrases = [
+        "contenuto completo",
+        "mostrami il contenuto",
+        "mostra il contenuto",
+        "fammi leggere",
+        "leggi la policy",
+        "leggi il documento",
+        "mostra il testo completo",
+        "testo completo della policy",
+        "contenuto della policy",
+        "mostrami la policy",
+        "mostra la policy",
+        "fammi vedere la policy",
+        "apri la policy",
+    ]
+
+    if any(
+        phrase in normalized_question
+        for phrase in detail_phrases
+    ):
+        return "get_policy_details"
+
+    # 3. Per le normali domande sui contenuti,
+    # accettiamo search_policies se il modello
+    # lo ha selezionato.
+    first_line = (
+        decision.splitlines()[0].strip()
+        if decision
+        else ""
+    )
+
+    if first_line.startswith("search_policies"):
+        return "search_policies"
+
+    # 4. Se il modello propone un altro strumento
+    # senza una corrispondente intenzione esplicita,
+    # usiamo la ricerca nel RAG come comportamento predefinito.
     return "search_policies"
