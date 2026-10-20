@@ -148,19 +148,10 @@ Non aggiungere spiegazioni.
 
 
 # Esegue lo strumento selezionato e restituisce il risultato
-def run_agent(user_message: str) -> str:
-    """Gestisce la richiesta dell'utente ed esegue lo strumento."""
+def execute_tool(selected_tool: str, user_message: str) -> str:
+    """Esegue lo strumento selezionato e formatta il risultato."""
 
-    # 1. Controlliamo l'input prima di chiamare il modello
-    if not isinstance(user_message, str) or not user_message.strip():
-        return "Inserisci una domanda per continuare."
-
-    user_message = user_message.strip()
-
-    # 2. Il modello seleziona lo strumento
-    selected_tool = choose_tool(user_message)
-
-    # 3. Eseguiamo lo strumento selezionato
+    # Strumento 1: elenco dei documenti
     if selected_tool == "list_policies":
 
         try:
@@ -178,11 +169,11 @@ def run_agent(user_message: str) -> str:
             + "\n".join(f"- {policy}" for policy in policies)
         )
 
+    # Strumento 2: ricerca nel RAG
     elif selected_tool == "search_policies":
 
         result = search_policies(user_message)
 
-        # Gestiamo il fallimento dello strumento
         if not result["ok"]:
             return result["answer"]
 
@@ -206,9 +197,23 @@ def run_agent(user_message: str) -> str:
             f"Similarità: {similarity_text}"
         )
 
-    # 4. Gestiamo eventuali strumenti non riconosciuti
+    # Gestione di uno strumento non riconosciuto
     return "Non sono riuscito a selezionare uno strumento valido."
 
+
+def run_agent(user_message: str) -> str:
+    """Gestisce la richiesta e coordina decisione ed esecuzione."""
+
+    if not isinstance(user_message, str) or not user_message.strip():
+        return "Inserisci una domanda per continuare."
+
+    user_message = user_message.strip()
+
+    # 1. Decidiamo quale strumento utilizzare
+    selected_tool = choose_tool(user_message)
+
+    # 2. Deleghiamo l'esecuzione a una funzione separata
+    return execute_tool(selected_tool, user_message)
 
 # Avvio dell'agente
 if __name__ == "__main__":
