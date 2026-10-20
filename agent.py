@@ -1,17 +1,25 @@
 import torch
 from agent_routing import select_tool_from_output
+from pathlib import Path
 
 
 # TOOL 1: restituisce i nomi dei documenti disponibili
 def list_policies() -> list[str]:
-    """Restituisce i nomi dei documenti disponibili."""
+    """Restituisce i nomi dei documenti disponibili senza caricare i modelli AI."""
 
-    from rag import documents
+    docs_dir = Path(__file__).resolve().parent / "documenti"
 
-    return sorted({
-        doc["source"]
-        for doc in documents
-    })
+    if not docs_dir.is_dir():
+        return []
+
+    supported_extensions = {".txt", ".pdf"}
+
+    return sorted(
+        path.name
+        for path in docs_dir.iterdir()
+        if path.is_file()
+        and path.suffix.lower() in supported_extensions
+    )
 
 
 # TOOL 2: cerca una risposta tramite il RAG
