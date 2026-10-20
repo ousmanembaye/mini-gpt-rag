@@ -223,7 +223,7 @@ reranker = CrossEncoder(
 gen_model = gen_model.to(device)
 gen_model.eval()
 
-def answer_query(query):
+def answer_query(query, debug=False):
     # Parametri del retrieval
     similarity_threshold = 0.5
     min_chunk_similarity = 0.5
@@ -268,7 +268,9 @@ def answer_query(query):
     )
 
     # Stampiamo i risultati
-    print("\n--- CONFRONTO DEI MODELLI ---")
+
+    if debug:
+        print("\n--- CONFRONTO DEI MODELLI ---")
 
     for rerank_score, embedding_score, chunk in ranked_candidates:
         print(f"\nEmbedding similarity: {embedding_score:.4f}")
@@ -276,7 +278,8 @@ def answer_query(query):
         print(f"Fonte: {chunk['source']}")
         print(f"Testo: {chunk['text']}")
 
-    print("\n--- DEBUG RETRIEVAL ---")
+    if debug:
+        print("\n--- DEBUG RETRIEVAL ---")
 
     for score, idx in zip(scores, indices):
         chunk = all_chunks[idx.item()]
