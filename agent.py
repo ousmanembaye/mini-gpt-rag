@@ -64,7 +64,7 @@ def search_policies(question: str) -> dict:
 
 # L'LLM sceglie quale strumento utilizzare
 def choose_tool(user_message: str) -> str:
-    from rag import gen_model, gen_tokenizer, device
+    from model_loader import gen_model, gen_tokenizer, device
 
     messages = [
         {

@@ -19,7 +19,6 @@ from config import (
 )
 
 from sentence_transformers import SentenceTransformer, CrossEncoder
-from transformers import AutoTokenizer, AutoModelForCausalLM
 from pathlib import Path
 
 # Cartella in cui si trova rag.py
@@ -216,24 +215,14 @@ embeddings = embedding_model.encode(
 
 import torch
 
-# Modello che genererà le risposte
-model_name = GENERATION_MODEL_NAME
-
-print("\nCaricamento del modello generativo...")
-
-gen_tokenizer = AutoTokenizer.from_pretrained(model_name)
-gen_model = AutoModelForCausalLM.from_pretrained(model_name)
-
-# Usiamo la GPU se disponibile, altrimenti la CPU
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# Importiamo il modello generativo condiviso
+from model_loader import gen_model, gen_tokenizer, device
 
 # Carichiamo il reranker una sola volta
 reranker = CrossEncoder(
     RERANKER_MODEL_NAME,
     device=device
 )
-gen_model = gen_model.to(device)
-gen_model.eval()
 
 def answer_query(query, debug=False):
     # Parametri del retrieval
