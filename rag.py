@@ -6,6 +6,17 @@ import torch
 import hashlib
 import json
 from pypdf import PdfReader
+from config import (
+    EMBEDDING_MODEL_NAME,
+    RERANKER_MODEL_NAME,
+    GENERATION_MODEL_NAME,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP,
+    RETRIEVAL_TOP_K,
+    SIMILARITY_THRESHOLD,
+    RERANKER_THRESHOLD,
+    MAX_NEW_TOKENS,
+)
 
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -79,7 +90,11 @@ print(f"Documenti caricati: {len(documents)}")
 for doc in documents:
     print(f"- {doc['source']}")
 
-def chunk_text(text, chunk_size=18, overlap=4):
+def chunk_text(
+    text,
+    chunk_size=CHUNK_SIZE,
+    overlap=CHUNK_OVERLAP
+):
     words = text.split()
 
     if chunk_size <= 0 or overlap < 0 or overlap >= chunk_size:
@@ -116,9 +131,6 @@ for doc_index, doc in enumerate(documents):
 
 
 # Carica il modello di embedding
-EMBEDDING_MODEL_NAME = (
-    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-)
 
 embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
@@ -205,7 +217,7 @@ embeddings = embedding_model.encode(
 import torch
 
 # Modello che genererà le risposte
-model_name = "Qwen/Qwen2.5-0.5B-Instruct"
+model_name = GENERATION_MODEL_NAME
 
 print("\nCaricamento del modello generativo...")
 
@@ -217,7 +229,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Carichiamo il reranker una sola volta
 reranker = CrossEncoder(
-    "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+    RERANKER_MODEL_NAME,
     device=device
 )
 gen_model = gen_model.to(device)
@@ -225,9 +237,8 @@ gen_model.eval()
 
 def answer_query(query, debug=False):
     # Parametri del retrieval
-    similarity_threshold = 0.5
-    min_chunk_similarity = 0.5
-    top_k = 3
+    similarity_threshold = SIMILARITY_THRESHOLD
+    top_k = RETRIEVAL_TOP_K
 
     # 1. Trasformiamo la domanda in un embedding
     query_embedding = embedding_model.encode(
@@ -269,24 +280,25 @@ def answer_query(query, debug=False):
 
     # Stampiamo i risultati
 
+    # Stampiamo i risultati soltanto in modalità debug
     if debug:
         print("\n--- CONFRONTO DEI MODELLI ---")
 
-    for rerank_score, embedding_score, chunk in ranked_candidates:
-        print(f"\nEmbedding similarity: {embedding_score:.4f}")
-        print(f"Reranker score: {float(rerank_score):.4f}")
-        print(f"Fonte: {chunk['source']}")
-        print(f"Testo: {chunk['text']}")
+        for rerank_score, embedding_score, chunk in ranked_candidates:
+            print(f"\nEmbedding similarity: {embedding_score:.4f}")
+            print(f"Reranker score: {float(rerank_score):.4f}")
+            print(f"Fonte: {chunk['source']}")
+            print(f"Testo: {chunk['text']}")
 
     if debug:
         print("\n--- DEBUG RETRIEVAL ---")
 
-    for score, idx in zip(scores, indices):
-        chunk = all_chunks[idx.item()]
+        for score, idx in zip(scores, indices):
+            chunk = all_chunks[idx.item()]
 
-        print(f"\nSimilarità: {score.item():.4f}")
-        print(f"Fonte: {chunk['source']}")
-        print(f"Testo: {chunk['text']}")
+            print(f"\nSimilarità: {score.item():.4f}")
+            print(f"Fonte: {chunk['source']}")
+            print(f"Testo: {chunk['text']}")
 
     best_score = scores[0].item()
 
@@ -299,7 +311,7 @@ def answer_query(query, debug=False):
         )
 
 # 5. Selezioniamo i chunk usando il reranker
-    reranker_threshold = 0.0
+    reranker_threshold = RERANKER_THRESHOLD
 
     relevant_chunks = [
         chunk
@@ -409,7 +421,7 @@ quando il contesto lo afferma esplicitamente.
     with torch.no_grad():
         output = gen_model.generate(
             **inputs,
-            max_new_tokens=100,
+            max_new_tokens=MAX_NEW_TOKENS,
             do_sample=False,
             pad_token_id=gen_tokenizer.eos_token_id
         )
