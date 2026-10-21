@@ -1,7 +1,11 @@
 import unittest
 
 from agent_routing import select_tool_from_output
-from agent import run_agent, search_policies
+from agent import (
+    run_agent,
+    search_policies,
+    get_policy_details
+)
 from unittest.mock import patch
 
 
@@ -180,6 +184,49 @@ class AgentInputTests(unittest.TestCase):
 
         mock_details.assert_called_once_with(question)
         mock_search.assert_not_called()
+    def test_policy_details_returns_correct_document(self):
+        result = get_policy_details(
+            "Mostrami il contenuto completo della policy sui rimborsi"
+        )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(
+            result["policy"],
+            "policy_rimborsi.txt"
+        )
+        self.assertIn("30 giorni", result["content"])
+        self.assertIn("ricevuta", result["content"].lower())
+    def test_policy_details_empty_input(self):
+        result = get_policy_details("   ")
+
+        self.assertFalse(result["ok"])
+        self.assertIsNone(result["policy"])
+        self.assertIn(
+            "indica quale policy",
+            result["content"].lower()
+        )
+    def test_policy_details_unknown_document(self):
+        result = get_policy_details(
+            "Mostrami la policy sulla formazione"
+        )
+
+        self.assertFalse(result["ok"])
+        self.assertIsNone(result["policy"])
+        self.assertIn(
+            "non ho identificato",
+            result["content"].lower()
+        )
+    def test_policy_details_ambiguous_request(self):
+        result = get_policy_details(
+            "Mostrami le policy su ferie e rimborsi"
+        )
+
+        self.assertFalse(result["ok"])
+        self.assertIsNone(result["policy"])
+        self.assertIn(
+            "più policy",
+            result["content"].lower()
+        )
 
 
 if __name__ == "__main__":
