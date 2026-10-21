@@ -150,6 +150,18 @@ def test_empty_search_input():
         and result["similarity"] is None
         and "domanda valida" in result["answer"].lower()
     )
+def test_policy_details_result():
+    """Verifica che l'agente restituisca il contenuto della policy sui rimborsi."""
+
+    result = run_agent(
+        "Mostrami il contenuto completo della policy sui rimborsi."
+    )
+
+    return (
+        "policy_rimborsi.txt" in result
+        and "30 giorni" in result.lower()
+        and "ricevuta" in result.lower()
+    )
 
 # ==================================================
 # ESECUZIONE DI TUTTI I TEST
@@ -166,6 +178,7 @@ tests = [
     ("Gestione delle informazioni mancanti", test_missing_information_result),
     ("Gestione dell'input vuoto nell'agente", test_empty_agent_input),
     ("Gestione dell'input non valido nel RAG", test_empty_search_input),
+    ("Lettura completa della policy sui rimborsi", test_policy_details_result),
 ]
 
 passed = 0
