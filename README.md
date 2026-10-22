@@ -73,34 +73,67 @@ You can then submit questions about the documents stored in the `documenti/` dir
 
 ## AI Agent
 
-The project also includes an experimental AI agent implemented in `agent.py`.
+## AI Agent
 
-The agent uses a language model to select between two tools:
+The project includes an experimental AI agent that uses a language model to select the appropriate tool for each user request.
 
-* `list_policies`: lists the available documents.
-* `search_policies`: searches company policies using the RAG pipeline.
+### Available Tools
 
-The agent delegates document retrieval and answer generation to the existing RAG system.
+The agent supports three tools:
+
+* `list_policies`: lists the available documents without loading the AI models.
+* `search_policies`: searches company policies using the RAG pipeline and generates an answer with its sources.
+* `get_policy_details`: reads the full content of a specific policy directly from its source file.
+
+The agent uses a routing module to interpret the model's decision and apply fallback rules when the output is unexpected.
 
 ### Run the Agent
 
-Start the agent with:
+Start the interactive terminal application:
 
 ```bash
 python agent.py
 ```
 
-You can then ask questions interactively.
+To launch the web interface:
 
-Example requests:
+```bash
+python agent_app.py
+```
+
+Open the local URL displayed in the terminal, normally `http://127.0.0.1:7860`.
+
+Type `esci` to terminate the terminal application.
+
+### Example Requests
 
 * "Which documents are available?"
 * "How many vacation days does an employee receive?"
 * "Can an employee work remotely without manager approval?"
+* "Show me the complete reimbursement policy."
 
-Type `esci` to terminate the agent.
+### Testing
 
-**Note:** Tool selection is experimental. The model may occasionally select the wrong tool. The current implementation uses a simple fallback when the model returns an unexpected output.
+Run the unit tests:
+
+```bash
+python -m unittest test_agent_unit.py -v
+```
+
+Run the integration tests:
+
+```bash
+python test_agent.py
+```
+
+The unit tests verify input validation, routing, tool execution, and error handling. The integration tests check the behavior of the agent and the RAG pipeline using the actual models.
+
+### Limitations
+
+Tool selection is experimental. The routing logic includes fallback rules, but ambiguouss or unusual requests may still be handled incorrectly. The language model may also generate unsupported answers.
+
+The project is an educational prototype and requires further evaluation before being used for real company policies.
+
 
 
 ## Example Questions

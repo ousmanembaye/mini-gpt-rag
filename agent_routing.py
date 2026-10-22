@@ -1,4 +1,5 @@
 import re
+from tool_registry import get_tool_names
 
 
 def normalize_text(text: str) -> str:
@@ -158,11 +159,7 @@ def select_tool_from_output(
 
     # 4. Se le regole precedenti non hanno chiarito l'intenzione,
     # accettiamo una decisione valida del modello.
-    valid_tools = {
-        "list_policies",
-        "search_policies",
-        "get_policy_details",
-    }
+    valid_tools = set(get_tool_names())
 
     if model_decision in valid_tools:
         return model_decision

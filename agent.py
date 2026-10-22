@@ -1,6 +1,7 @@
 import torch
 from agent_routing import select_tool_from_output
 from pathlib import Path
+from tool_registry import TOOL_DESCRIPTIONS
 
 
 # TOOL 1: restituisce i nomi dei documenti disponibili
@@ -193,38 +194,32 @@ def search_policies(question: str) -> dict:
 # L'LLM sceglie quale strumento utilizzare
 def choose_tool(user_message: str) -> str:
     from model_loader import gen_model, gen_tokenizer, device
+    tool_descriptions = "\n".join(
+        f"- {name}: {description}"
+        for name, description in TOOL_DESCRIPTIONS.items()
+    )
 
     messages = [
         {
             "role": "system",
-            "content": """
+            "content": f"""
 Sei un router per un assistente aziendale.
 
-Puoi scegliere uno dei seguenti strumenti:
+Devi scegliere lo strumento più adatto alla richiesta
+dell'utente tra quelli disponibili:
 
-1. list_policies
-Usalo quando l'utente vuole sapere quali documenti
-o policy sono disponibili.
+{tool_descriptions}
 
-2. search_policies
-Usalo quando l'utente pone una domanda sul contenuto
-delle policy e vuole ottenere una risposta.
-Esempi: quanti giorni di ferie spettano,
-quanti giorni di lavoro da remoto sono consentiti,
-se una certa attività richiede approvazione.
+Regole:
+- Se l'utente vuole sapere quali documenti esistono,
+  scegli list_policies.
+- Se vuole leggere il contenuto completo di una policy,
+  scegli get_policy_details.
+- Se pone una domanda e vuole una risposta basata sui documenti,
+  scegli search_policies.
 
-3. get_policy_details
-Usalo quando l'utente vuole leggere o visualizzare
-il contenuto di una specifica policy.
-Esempi: mostra il contenuto completo della policy
-sui rimborsi; fammi leggere la policy sulle ferie.
-
-Devi scegliere un solo strumento.
-
-Rispondi esclusivamente con una delle seguenti etichette:
-list_policies
-search_policies
-get_policy_details
+Rispondi esclusivamente con il nome esatto dello strumento.
+Non aggiungere spiegazioni.
 """
         },
         {
