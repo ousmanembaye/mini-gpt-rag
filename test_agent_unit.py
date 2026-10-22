@@ -227,6 +227,21 @@ class AgentInputTests(unittest.TestCase):
             "più policy",
             result["content"].lower()
         )
+    def test_alternative_list_request(self):
+        result = select_tool_from_output(
+            "list_policies",
+            "Puoi indicarmi quali file sono presenti?"
+        )
+
+        self.assertEqual(result, "list_policies")
+
+    def test_alternative_detail_request(self):
+        result = select_tool_from_output(
+            "search_policies",
+            "Vorrei consultare il documento sui rimborsi."
+        )
+
+        self.assertEqual(result, "get_policy_details")
 
 
 if __name__ == "__main__":
