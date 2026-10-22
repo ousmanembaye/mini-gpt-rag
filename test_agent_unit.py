@@ -242,6 +242,77 @@ class AgentInputTests(unittest.TestCase):
         )
 
         self.assertEqual(result, "get_policy_details")
+    def test_routing_paraphrases(self):
+        test_cases = [
+            # Richieste di elenco
+            (
+                "Elenco alternativo",
+                "Elenca tutti i documenti presenti",
+                "get_policy_details",
+                "list_policies"
+            ),
+            (
+                "Ricerca dei file disponibili",
+                "Quali file sono disponibili?",
+                "search_policies",
+                "list_policies"
+            ),
+            (
+                "Elenco delle policy",
+                "Fammi vedere l'elenco delle policy aziendali",
+                "search_policies",
+                "list_policies"
+            ),
+
+            # Richieste di lettura completa
+            (
+                "Consultazione dei rimborsi",
+                "Vorrei consultare la policy sui rimborsi.",
+                "search_policies",
+                "get_policy_details"
+            ),
+            (
+                "Lettura della policy ferie",
+                "Fammi vedere la policy delle ferie",
+                "search_policies",
+                "get_policy_details"
+            ),
+            (
+                "Testo completo della policy",
+                "Puoi mostrarmi il testo completo della policy per il lavoro da remoto?",
+                "search_policies",
+                "get_policy_details"
+            ),
+
+            # Domande che richiedono il RAG
+            (
+                "Giorni di ferie",
+                "Quanti giorni di ferie mi spettano?",
+                "get_policy_details",
+                "search_policies"
+            ),
+            (
+                "Procedura di rimborso",
+                "Come richiedo un rimborso?",
+                "get_policy_details",
+                "search_policies"
+            ),
+            (
+                "Scadenza del rimborso",
+                "Quando devo inviare la richiesta di rimborso?",
+                "get_policy_details",
+                "search_policies"
+            ),
+        ]
+
+        for name, question, model_output, expected_tool in test_cases:
+            with self.subTest(caso=name):
+                result = select_tool_from_output(
+                    model_output,
+                    question
+                )
+
+                self.assertEqual(result, expected_tool)
 
 
 if __name__ == "__main__":
